@@ -4,7 +4,7 @@
 define('MYSQL_USER', 'root');
 define('MYSQL_PASSWORD', '');
 define('MYSQL_HOST', 'localhost:3308');
-define('MYSQL_DATABASE', 'twitter_database');
+define('MYSQL_DATABASE', 'yello');
 
 //PDO Options
 $pdoOptions = array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
