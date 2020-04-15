@@ -87,12 +87,12 @@ if(isset($_POST['yello'])) {
                             <h2 class="tiny-title"><span class="fas fa-circle icon"></span> Profile</h2>
                         </div>
                     </a>
-                    <a href="">
+                    <a href="explore.php">
                         <div class="section">
                             <h2 class="tiny-title"><span class="fas fa-search icon"></span> Explore</h2>
                         </div>
                     </a>
-                    <a href="">
+                    <a href="settings.php">
                         <div class="section">
                             <h2 class="tiny-title"><span class="fas fa-cog icon"></span> Settings</h2>
                         </div>

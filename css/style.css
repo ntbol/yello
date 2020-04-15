@@ -54,6 +54,8 @@ body, html{
     font-size: 18px;
     color: black;
     margin-bottom: 0px;
+    line-height: 23px;
+    font-weight: 100;
 }
 .light-text{
     color: #CECECE;
@@ -208,10 +210,10 @@ a{
     border: 1px solid #BBBBBB;
 }
 .yello-float{
-    background: #F6F6F6;
-    border-radius: 5px;
-    padding: 20px;
-    margin-bottom: 15px;
+     background: #F6F6F6;
+     border-radius: 5px;
+     padding: 20px;
+     margin-bottom: 15px;
 }
 .profile-pic{
     background: #f1c40f;

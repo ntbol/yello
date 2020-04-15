@@ -25,7 +25,7 @@ if (isset($_SESSION['user_id'])) {
     $yellosAmount = $yellos->fetchALL(PDO::FETCH_ASSOC);
 
     //Pulls out who the logged in user is following for follow button
-    $followingPull = $pdo->prepare("SELECT f.follow_user, u.username, u.uid  FROM follow AS f, users AS u WHERE f.follow_user = '$uid' AND f.user_uid = u.uid;");
+    $followingPull = $pdo->prepare("SELECT f.follow_user, f.user_uid  FROM follow AS f WHERE f.follow_user = '$uid' AND f.user_uid = '$profile_uid';");
     $followingPull->execute();
     $following = $followingPull->fetch(PDO::FETCH_ASSOC);
 
@@ -62,7 +62,7 @@ if (isset($_SESSION['user_id'])) {
     }
 
     if(isset($_POST['unfollow'])){
-
+        $profile_uid = $_GET['u'];
         $follow = "DELETE FROM follow WHERE follow_user = :loggeduser AND user_uid = :followeduser";
         $stmt = $pdo->prepare($follow);
         //Bind varibles
@@ -77,11 +77,43 @@ if (isset($_SESSION['user_id'])) {
         }
     }
 
+    //If save is clicked on edit profile modal
+    if(isset($_POST['editProfile'])){
+        //Sanitizes data
+        $bio = !empty($_POST['bio']) ? trim($_POST['bio']) : null;
+        $link = !empty($_POST['link']) ? trim($_POST['link']) : null;
+        $display = !empty($_POST['display']) ? trim($_POST['display']) : null;
 
+        //Updates table
+        $edit = "UPDATE users SET link ='$link', bio ='$bio', display ='$display' WHERE uid ='$uid'";
+        $stmt = $pdo->prepare($edit);
+
+        $result = $stmt->execute();
+
+        //If successful, returns to user profile
+        if($result) {
+            header('Location: profile.php?u=' . $uid .'');
+        }
+
+    }
+
+    //Adjusts SQL DATETIME and reformats to easy to read format
     $createDate = new DateTime($user['user_date']);
-
     $strip = $createDate->format('F Y');
-    ;
+
+    // Remove the http://, www., and slash(/) from the URL
+    $input = $user['link'];
+    // If URI is like, eg. www.way2tutorial.com/
+    $input = trim($input, '/');
+    // If not have http:// or https:// then prepend it
+    if (!preg_match('#^http(s)?://#', $input)) {
+        $input = 'http://' . $input;
+    }
+    $urlParts = parse_url($input);
+    // Remove www.
+    $domain_name = preg_replace('/^www\./', '', $urlParts['host']);
+
+
 ?>
 <!DOCTYPE html>
 <html>
@@ -92,6 +124,17 @@ if (isset($_SESSION['user_id'])) {
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.1/css/all.css">
     <link rel="stylesheet" href="css/style.css" type="text/css">
+
+    <script>
+        function countChar(val) {
+            var len = val.value.length;
+            if (len >= 150) {
+                val.value = val.value.substring(0,150);
+            } else {
+                $('#charNum').text(150 - len);
+            }
+        };
+    </script>
 </head>
 <body>
 <div class="topbar"></div>
@@ -115,12 +158,12 @@ if (isset($_SESSION['user_id'])) {
                             <h2 class="tiny-title"><span class="fas fa-circle icon"></span> Profile</h2>
                         </div>
                     </a>
-                    <a href="">
+                    <a href="explore.php">
                         <div class="section">
                             <h2 class="tiny-title"><span class="fas fa-search icon"></span> Explore</h2>
                         </div>
                     </a>
-                    <a href="">
+                    <a href="settings.php">
                         <div class="section">
                             <h2 class="tiny-title"><span class="fas fa-cog icon"></span> Settings</h2>
                         </div>
@@ -162,8 +205,8 @@ if (isset($_SESSION['user_id'])) {
                 <!-- This button changes based on the user logged in and if you are following the users profile you are looking at -->
                 <div class="col-lg-3" style="padding-top: 5px">
                     <?php if($_SESSION['user_id'] == $profile_uid){ ?>
-                        <a href="" class="btn btn-theme-thin btn-block">Edit</a>
-                    <?php } elseif($profile_uid == $following['uid']) { ?>
+                        <button class="btn btn-theme-thin btn-block" data-toggle="modal" data-target="#editProfile">Edit</button>
+                    <?php } elseif($profile_uid == $following['user_uid']) { ?>
                         <form action="profile.php?u=<?=$profile_uid?>" method="post">
                             <input type="submit" name="unfollow" value="Following" class="btn btn-theme btn-block">
                         </form>
@@ -179,11 +222,11 @@ if (isset($_SESSION['user_id'])) {
                 <div class="col-lg-11">
                     <h3 class="small-title" style="margin-bottom: 0px"><?=$user['display']?></h3>
                     <h4 class="yello-text" style="color: #f1c40f">@<?=$user['username']?></h4>
-                    <p class="yello-text"><?=$user['bio']?></p>
+                    <p class="yello-text" style="padding-top: 10px"><?=$user['bio']?></p>
                     <div class="row" style="padding-top: 15px">
                         <?php if($user['link'] != null) {?>
                             <div class="col-lg-6 light-text">
-                                <span class="fas fa-link"></span> <a href="<?=$user['link']?>" class="yello-link"><?=$user['link']?></a>
+                                <span class="fas fa-link"></span> <a href="<?=$user['link']?>" class="yello-link"><?=$domain_name?></a>
                             </div>
                         <?php } else { ?>
                         <?php } ?>
@@ -236,7 +279,7 @@ if (isset($_SESSION['user_id'])) {
                                 <div class="profile-pic"></div>
                             </div>
                             <div class="col-lg-10" style="padding-left: 0px">
-                                <h3 class="tiny-title" style="margin-bottom: 0px"><?=$yello['display']?>  <span class="yello-link">@<?=$yello['username']?></span></h3>
+                                <h3 class="tiny-title" style="margin-bottom: 0px"><?=$yello['display']?>  <span class="yello-link" style="color: #f1c40f">@<?=$yello['username']?></span></h3>
                                 <p class="yello-text"><?=$yello['yello']?></p>
                             </div>
                         </div>
@@ -247,6 +290,46 @@ if (isset($_SESSION['user_id'])) {
         </div>
     </div>
 </div>
+
+
+<!-- Edit Profile Modal -->
+<div class="modal fade" id="editProfile" tabindex="-1" role="dialog" aria-labelledby="editProfileLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document" style="max-width: 550px">
+        <div class="modal-content">
+            <div class="modal-header" style="padding-top: 25px; padding-bottom: 10px">
+                <h4 class="title" id="editProfileLabel">Edit Profile</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form method="post" action="profile.php?u=<?=$uid?>">
+                    <div class="form-group">
+                        <h5 class="tiny-title">Theme Color</h5>
+                    </div>
+                    <div class="form-group">
+                        <h5 class="tiny-title">Display Name</h5>
+                        <input type="text" name="display" class="form-control" value="<?=$user['display']?>">
+                    </div>
+                    <div class="form-group">
+                        <h5 class="tiny-title">Bio</h5>
+                        <textarea id="bioText" name="bio" class="yello-post yello-text" maxlength="150" onkeyup="countChar(this)"><?=$user['bio']?>
+                        </textarea>
+                        <div id="charNum" align="right" class="tiny-text" style="margin-bottom: 5px; margin-top: -25px; margin-right: 5px">150</div>
+                    </div>
+                    <div class="form-group">
+                        <h5 class="tiny-title">Link</h5>
+                        <input type="text" name="link" class="form-control" value="<?=$user['link']?>"
+                    </div>
+                    <div class="form-group" style="padding-top: 25px">
+                        <input type="submit" name="editProfile" class="btn btn-theme btn-block" value="Save">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>

@@ -1,4 +1,5 @@
 <?php
+error_reporting(E_ERROR);
 session_start();
 require 'php/connect.php';
 
@@ -20,15 +21,19 @@ if (isset($_SESSION['user_id'])) {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     //Pulls out who the logged in users followers are
-    $followerPull = $pdo->prepare("SELECT f.user_uid, u.*  FROM follow AS f, users AS u WHERE f.user_uid = '$profile_uid' AND f.follow_user = u.uid;");
+    $followerPull = $pdo->prepare("SELECT f.*, u.*  FROM follow AS f, users AS u WHERE f.user_uid = '$profile_uid' AND f.follow_user = u.uid;");
     $followerPull->execute();
     $follower = $followerPull->fetchAll(PDO::FETCH_ASSOC);
 
     //Pulls out who the logged in user is following for follow button
     $followingPull = $pdo->prepare("SELECT f.follow_user, u.username, u.uid  FROM follow AS f, users AS u WHERE f.follow_user = '$uid' AND f.user_uid = u.uid;");
     $followingPull->execute();
-    $following = $followingPull->fetch(PDO::FETCH_ASSOC);
+    $following = $followingPull->fetchall(PDO::FETCH_ASSOC);
+
 }
+
+
+
 
     if(isset($_POST['follow'])){
 
@@ -98,12 +103,12 @@ if (isset($_SESSION['user_id'])) {
                             <h2 class="tiny-title"><span class="fas fa-circle icon"></span> Profile</h2>
                         </div>
                     </a>
-                    <a href="">
+                    <a href="explore.php">
                         <div class="section">
                             <h2 class="tiny-title"><span class="fas fa-search icon"></span> Explore</h2>
                         </div>
                     </a>
-                    <a href="">
+                    <a href="settings.php">
                         <div class="section">
                             <h2 class="tiny-title"><span class="fas fa-cog icon"></span> Settings</h2>
                         </div>
@@ -137,6 +142,16 @@ if (isset($_SESSION['user_id'])) {
             <div class="row">
                 <div class="col-lg-12">
                 <?php foreach ($follower as $followeruser) : ?>
+                    <?php
+                        foreach($following as $f) {
+                            $result = $f['uid'];
+                            if($result == $followeruser['follow_user']){
+                                $userF = $followeruser['follow_user'];
+                            } else {
+
+                            }
+                        }
+                    ?>
                     <div class="row" style="padding-top: 15px">
                         <div class="col-lg-2">
                             <div class="profile-pic"></div>
@@ -146,7 +161,8 @@ if (isset($_SESSION['user_id'])) {
                             <a href="profile.php?u=<?=$followeruser['uid']?>"><h4 class="yello-text" style="color: #f1c40f">@<?=$followeruser['username']?></h4></a>
                         </div>
                         <div class="col-lg-3" style="padding-top: 7px">
-                            <?php if($followeruser['uid'] == $following['uid']) { ?>
+                            <?php if($_SESSION['user_id'] == $followeruser['uid']){ ?>
+                            <?php } elseif($followeruser['follow_user'] == $userF) { ?>
                             <form action="followers.php?u=<?=$profile_uid?>" method="post">
                                 <input type="hidden" name="user" value="<?=$followeruser['uid']?>">
                                 <input type="submit" name="unfollow" value="Following" class="btn btn-theme btn-block">
