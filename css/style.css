@@ -240,3 +240,18 @@ a{
     border: 5px white solid;
     margin-top: -55px;
 }
+.yelloicon{
+    background: transparent;
+    border: none;
+    color: #BBBBBB;
+}
+.yelloicon:hover{
+    background: transparent;
+    border: none;
+    color: #f1c40f;
+}
+.yelloiconactive{
+    background: transparent;
+    border: none;
+    color: #f1c40f;
+}

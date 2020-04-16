@@ -22,6 +22,11 @@ if (isset($_SESSION['user_id'])) {
     $recentyellos->execute();
     $yellos = $recentyellos->fetchAll(PDO::FETCH_ASSOC);
 
+    //Pulls favorite data
+    $favoriteyellos = $pdo->prepare("SELECT * FROM favorite WHERE favorite_user = '$uid'");
+    $favoriteyellos->execute();
+    $favorites = $favoriteyellos->fetchAll(PDO::FETCH_ASSOC);
+
 }
 
 if(isset($_POST['yello'])) {
@@ -43,6 +48,41 @@ if(isset($_POST['yello'])) {
     }
 }
 
+//Adds post to logged in users favorites
+if(isset($_POST['favorite'])) {
+    $useruid = !empty($_POST['uid']) ? trim($_POST['uid']) : null;
+    $yelloid = !empty($_POST['yelloid']) ? trim($_POST['yelloid']) : null;
+
+    $sql = "INSERT INTO favorite (favorite_user, yello_id) VALUES (:useruid, :yelloid)";
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':useruid', $useruid);
+    $stmt->bindValue(':yelloid', $yelloid);
+
+    $result = $stmt->execute();
+
+    //If post was successful
+    if($result) {
+        header ('Location: index.php');
+    }
+}
+
+//Removes post to logged in users favorites
+if(isset($_POST['unfavorite'])) {
+    $useruid = !empty($_POST['uid']) ? trim($_POST['uid']) : null;
+    $yelloid = !empty($_POST['yelloid']) ? trim($_POST['yelloid']) : null;
+
+    $sql = "DELETE FROM favorite WHERE favorite_user = '$useruid' AND yello_id = '$yelloid'";
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':useruid', $useruid);
+    $stmt->bindValue(':yelloid', $yelloid);
+
+    $result = $stmt->execute();
+
+    //If post was successful
+    if($result) {
+        header ('Location: index.php');
+    }
+}
 ?>
 <!DOCTYPE html>
 <html>
@@ -132,6 +172,57 @@ if(isset($_POST['yello'])) {
                             <div class="col-lg-10" style="padding-left: 0px">
                                 <h3 class="tiny-title" style="margin-bottom: 0px"><?=$yello['display']?>  <a href="profile.php?u=<?=$yello['uid']?>" class="yello-link">@<?=$yello['username']?></a></h3>
                                 <p class="yello-text"><?=$yello['yello']?></p>
+                                <div class="row" style="padding-top: 15px">
+                                    <div class="col-lg-2">
+                                        <!-- Checks to see if the post was already favorited by logged in user -->
+                                        <?php
+                                            $yelloid = '';
+                                            $checkyello = '';
+                                            foreach ($favorites as $favorite){
+                                                $yelloid = $favorite['yello_id'];
+                                                if ($yelloid == $yello['yello_id']){
+                                                    $checkyello = $yello['yello_id'];
+                                                }
+                                            }
+                                            //Counts the amount of favorites a post has
+                                            $countid = $yello['yello_id'];
+                                            $favoritecount = $pdo->prepare("SELECT COUNT(*) FROM favorite WHERE yello_id = '$countid'");
+                                            $favoritecount->execute();
+                                            $fcount = $favoritecount->fetch(PDO::FETCH_ASSOC);
+                                        ?>
+                                        <?php if($checkyello != $yello['yello_id']) { ?>
+                                            <form action="index.php" method="post">
+                                                <input type="hidden" name="yelloid" value="<?=$yello['yello_id']?>">
+                                                <input type="hidden" name="uid" value="<?=$uid?>">
+                                                <button type="submit" name="favorite" class="yelloicon fas fa-heart" >
+                                                    <?php foreach ($fcount as $fc) : ?>
+                                                        <h5 class="light-text"><?=$fc?></h5>
+                                                    <?php endforeach; ?>
+                                                </button>
+                                            </form>
+                                        <?php } else { ?>
+                                            <form action="index.php" method="post">
+                                                <input type="hidden" name="yelloid" value="<?=$yello['yello_id']?>">
+                                                <input type="hidden" name="uid" value="<?=$uid?>">
+                                                <button type="submit" name="unfavorite" class="yelloiconactive fas fa-heart" >
+                                                    <?php foreach ($fcount as $fc) : ?>
+                                                        <h5 class="light-text"><?=$fc?></h5>
+                                                    <?php endforeach; ?>
+                                                </button>
+                                            </form>
+                                        <?php } ?>
+                                    </div>
+                                    <div class="col-lg-2">
+                                        <form action="yello.php?y=<?=$yello['yello_id']?>" method="post">
+                                            <button type="submit" name="comment" class="yelloicon"><span class="fas fa-comment-alt"></span></button>
+                                        </form>
+                                    </div>
+                                    <div class="col-lg-2">
+                                        <form action="index.php" method="post">
+                                            <button type="submit"  name="retweet"class="yelloicon"><i class="fas fa-retweet"></i></button>
+                                        </form>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

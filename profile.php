@@ -43,6 +43,11 @@ if (isset($_SESSION['user_id'])) {
     $profileyellos = $pdo->prepare("SELECT t.*, u.* FROM yellos AS t, users AS u WHERE ( t.user_uid = '$profile_uid') AND t.user_uid = u.uid ORDER BY t.yello_time DESC;");
     $profileyellos->execute();
     $yellos = $profileyellos->fetchAll(PDO::FETCH_ASSOC);
+
+    //Pulls the post the user has favorited
+    $userfavorites = $pdo->prepare("SELECT f.favorite_user, t.*, u.* FROM favorite AS f, yellos AS t, users AS u WHERE f.favorite_user = '$profile_uid' AND f.yello_id = t.yello_id AND t.user_uid = u.uid;");
+    $userfavorites->execute();
+    $favorites = $userfavorites->fetchAll(PDO::FETCH_ASSOC);
 }
 
     if(isset($_POST['follow'])){
@@ -262,31 +267,67 @@ if (isset($_SESSION['user_id'])) {
                 </a>
             </div>
             <hr>
+            <?php if(isset($_POST['favorites'])) { ?>
             <div class="row">
                 <div class="col-lg-6">
-                    <a href="" class="btn btn-block btn-theme-air air-active">Yellos</a>
+                    <form method="post" action="profile.php?u=<?=$uid?>">
+                        <button name="yello" class="btn btn-block btn-theme-air">Yellos</button>
+                    </form>
                 </div>
                 <div class="col-lg-6">
-                    <a href="" class="btn btn-block btn-theme-air">Favorites</a>
+                    <form method="post" action="profile.php?u=<?=$uid?>">
+                        <button name="favorites" class="btn btn-block btn-theme-air air-active">Favorites</button>
+                    </form>
+                </div>
+            </div>
+            <div class="row" style="padding-top: 15px">
+                <div class="col-lg-12">
+                    <?php foreach ($favorites as $fav) : ?>
+                        <div class="yello-float">
+                            <div class="row">
+                                <div class="col-lg-2">
+                                    <div class="profile-pic"></div>
+                                </div>
+                                <div class="col-lg-10" style="padding-left: 0px">
+                                    <h3 class="tiny-title" style="margin-bottom: 0px"><?=$fav['display']?>  <span class="yello-link" style="color: #f1c40f">@<?=$fav['username']?></span></h3>
+                                    <p class="yello-text"><?=$fav['yello']?></p>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach;?>
+                </div>
+            </div>
+            <?php } else { ?>
+            <div class="row">
+                <div class="col-lg-6">
+                    <form method="post" action="profile.php?u=<?=$uid?>">
+                        <button name="yello" class="btn btn-block btn-theme-air air-active">Yellos</button>
+                    </form>
+                </div>
+                <div class="col-lg-6">
+                    <form method="post" action="profile.php?u=<?=$uid?>">
+                        <button name="favorites" class="btn btn-block btn-theme-air">Favorites</button>
+                    </form>
                 </div>
             </div>
             <div class="row" style="padding-top: 15px">
                 <div class="col-lg-12">
                     <?php foreach ($yellos as $yello) : ?>
-                    <div class="yello-float">
-                        <div class="row">
-                            <div class="col-lg-2">
-                                <div class="profile-pic"></div>
-                            </div>
-                            <div class="col-lg-10" style="padding-left: 0px">
-                                <h3 class="tiny-title" style="margin-bottom: 0px"><?=$yello['display']?>  <span class="yello-link" style="color: #f1c40f">@<?=$yello['username']?></span></h3>
-                                <p class="yello-text"><?=$yello['yello']?></p>
+                        <div class="yello-float">
+                            <div class="row">
+                                <div class="col-lg-2">
+                                    <div class="profile-pic"></div>
+                                </div>
+                                <div class="col-lg-10" style="padding-left: 0px">
+                                    <h3 class="tiny-title" style="margin-bottom: 0px"><?=$yello['display']?>  <span class="yello-link" style="color: #f1c40f">@<?=$yello['username']?></span></h3>
+                                    <p class="yello-text"><?=$yello['yello']?></p>
+                                </div>
                             </div>
                         </div>
-                    </div>
                     <?php endforeach;?>
                 </div>
             </div>
+            <?php } ?>
         </div>
     </div>
 </div>
