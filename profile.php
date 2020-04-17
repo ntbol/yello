@@ -11,6 +11,7 @@ if(!isset($_SESSION['user_id']) || !isset($_SESSION['logged_in'])) {
 //Assigns user id to a varible
 $uid = $_SESSION['user_id'];
 
+
 //Pull uid from url
 $profile_uid = $_GET['u'];
 //Pull username from ID
@@ -48,6 +49,16 @@ if (isset($_SESSION['user_id'])) {
     $userfavorites = $pdo->prepare("SELECT f.favorite_user, t.*, u.* FROM favorite AS f, yellos AS t, users AS u WHERE f.favorite_user = '$profile_uid' AND f.yello_id = t.yello_id AND t.user_uid = u.uid;");
     $userfavorites->execute();
     $favorites = $userfavorites->fetchAll(PDO::FETCH_ASSOC);
+
+    //Pulls favorite data
+    $favoriteyellos = $pdo->prepare("SELECT * FROM favorite WHERE favorite_user = '$uid'");
+    $favoriteyellos->execute();
+    $favoritedata = $favoriteyellos->fetchAll(PDO::FETCH_ASSOC);
+
+    //Pulls reyello data
+    $reyellos = $pdo->prepare("SELECT * FROM reyello WHERE user_uid = '$uid'");
+    $reyellos->execute();
+    $reyello = $reyellos->fetchAll(PDO::FETCH_ASSOC);
 }
 
     if(isset($_POST['follow'])){
@@ -101,6 +112,78 @@ if (isset($_SESSION['user_id'])) {
         }
 
     }
+
+//Adds post to logged in users favorites
+if(isset($_POST['favorite'])) {
+    $useruid = !empty($_POST['uid']) ? trim($_POST['uid']) : null;
+    $yelloid = !empty($_POST['yelloid']) ? trim($_POST['yelloid']) : null;
+
+    $sql = "INSERT INTO favorite (favorite_user, yello_id) VALUES (:useruid, :yelloid)";
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':useruid', $useruid);
+    $stmt->bindValue(':yelloid', $yelloid);
+
+    $result = $stmt->execute();
+
+    //If post was successful
+    if($result) {
+        header ('Location: profile.php?u=' . $profile_uid .'');
+    }
+}
+
+//Removes post to logged in users favorites
+if(isset($_POST['unfavorite'])) {
+    $useruid = !empty($_POST['uid']) ? trim($_POST['uid']) : null;
+    $yelloid = !empty($_POST['yelloid']) ? trim($_POST['yelloid']) : null;
+
+    $sql = "DELETE FROM favorite WHERE favorite_user = '$useruid' AND yello_id = '$yelloid'";
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':useruid', $useruid);
+    $stmt->bindValue(':yelloid', $yelloid);
+
+    $result = $stmt->execute();
+
+    //If post was successful
+    if($result) {
+        header ('Location: profile.php?u=' . $profile_uid .'');
+    }
+}
+
+//repost post on logged in users timeline
+if(isset($_POST['retweet'])) {
+    $useruid = !empty($_POST['uid']) ? trim($_POST['uid']) : null;
+    $yelloid = !empty($_POST['yelloid']) ? trim($_POST['yelloid']) : null;
+
+    $sql = "INSERT INTO reyello (user_uid, yello_id) VALUES (:useruid, :yelloid)";
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':useruid', $useruid);
+    $stmt->bindValue(':yelloid', $yelloid);
+
+    $result = $stmt->execute();
+
+    //If post was successful
+    if($result) {
+        header ('Location: profile.php?u=' . $profile_uid .'');
+    }
+}
+
+//unpost repost on logged in users timeline
+if(isset($_POST['unretweet'])) {
+    $useruid = !empty($_POST['uid']) ? trim($_POST['uid']) : null;
+    $yelloid = !empty($_POST['yelloid']) ? trim($_POST['yelloid']) : null;
+
+    $sql = "DELETE FROM reyello WHERE user_uid = '$useruid' AND yello_id = '$yelloid'";
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':useruid', $useruid);
+    $stmt->bindValue(':yelloid', $yelloid);
+
+    $result = $stmt->execute();
+
+    //If post was successful
+    if($result) {
+        header ('Location: profile.php?u=' . $profile_uid .'');
+    }
+}
 
     //Adjusts SQL DATETIME and reformats to easy to read format
     $createDate = new DateTime($user['user_date']);
@@ -270,18 +353,23 @@ if (isset($_SESSION['user_id'])) {
             <?php if(isset($_POST['favorites'])) { ?>
             <div class="row">
                 <div class="col-lg-6">
-                    <form method="post" action="profile.php?u=<?=$uid?>">
+                    <form method="post" action="profile.php?u=<?=$profile_uid?>">
                         <button name="yello" class="btn btn-block btn-theme-air">Yellos</button>
                     </form>
                 </div>
                 <div class="col-lg-6">
-                    <form method="post" action="profile.php?u=<?=$uid?>">
+                    <form method="post" action="profile.php?u=<?=$profile_uid?>">
                         <button name="favorites" class="btn btn-block btn-theme-air air-active">Favorites</button>
                     </form>
                 </div>
             </div>
             <div class="row" style="padding-top: 15px">
                 <div class="col-lg-12">
+                    <?php
+                    if($favorites == null){
+                        echo "<div class='yello-float'><i>No favorited yellos</i></div>";
+                    } else {
+                        ?>
                     <?php foreach ($favorites as $fav) : ?>
                         <div class="yello-float">
                             <div class="row">
@@ -291,40 +379,241 @@ if (isset($_SESSION['user_id'])) {
                                 <div class="col-lg-10" style="padding-left: 0px">
                                     <h3 class="tiny-title" style="margin-bottom: 0px"><?=$fav['display']?>  <span class="yello-link" style="color: #f1c40f">@<?=$fav['username']?></span></h3>
                                     <p class="yello-text"><?=$fav['yello']?></p>
+                                    <div class="row" style="padding-top: 15px">
+                                        <!-- Checks to see if the post was already favorited/reyello by logged in user -->
+                                        <?php
+                                        //Sets default value to blank to stop php errors of unassigned varibles
+                                        $yelloid = '';
+                                        $checkyello = '';
+                                        $reyelloid = '';
+                                        $checkreyello = '';
+                                        //Checks logged in users favorites and checks which timeline post are in the table. To prevent double favoriting
+                                        foreach ($favoritedata as $favorite){
+                                            $yelloid = $favorite['yello_id'];
+                                            if ($yelloid == $fav['yello_id']){
+                                                $checkyello = $fav['yello_id'];
+                                            }
+                                        }
+                                        //Checks logged in users reyellos and checks which timeline post are in the table. To prevent double reyellos
+                                        foreach ($reyello as $ry){
+                                            $reyelloid = $ry['yello_id'];
+                                            if ($reyelloid == $fav['yello_id']){
+                                                $checkreyello = $fav['yello_id'];
+                                            }
+                                        }
+                                        //Counts the amount of favorites a post has
+                                        $countid = $fav['yello_id'];
+                                        $favoritecount = $pdo->prepare("SELECT COUNT(*) FROM favorite WHERE yello_id = '$countid'");
+                                        $favoritecount->execute();
+                                        $fcount = $favoritecount->fetch(PDO::FETCH_ASSOC);
+
+                                        //Counts the amount of comments a post has
+                                        $commentcount = $pdo->prepare("SELECT COUNT(*) FROM comment WHERE yello_id = '$countid'");
+                                        $commentcount->execute();
+                                        $ccount = $commentcount->fetch(PDO::FETCH_ASSOC);
+
+                                        //Counts the amount of reyellos a post has
+                                        $reyellocount = $pdo->prepare("SELECT COUNT(*) FROM reyello WHERE yello_id = '$countid'");
+                                        $reyellocount->execute();
+                                        $rcount = $reyellocount->fetch(PDO::FETCH_ASSOC);
+                                        ?>
+                                        <div class="col-lg-2">
+                                            <!-- If post hasnt been favorited by logged in user -->
+                                            <?php if($checkyello != $fav['yello_id']) { ?>
+                                                <form action="profile.php?u=<?=$uid?>" method="post">
+                                                    <input type="hidden" name="yelloid" value="<?=$fav['yello_id']?>">
+                                                    <input type="hidden" name="uid" value="<?=$uid?>">
+                                                    <button type="submit" name="favorite" class="yelloicon fas fa-heart" >
+                                                        <?php foreach ($fcount as $fc) : ?>
+                                                            <h5 class="light-text"><?=$fc?></h5>
+                                                        <?php endforeach; ?>
+                                                    </button>
+                                                </form>
+                                                <!-- If post has been favorited by logged in user -->
+                                            <?php } else { ?>
+                                                <form action="profile.php?u=<?=$uid?>" method="post">
+                                                    <input type="hidden" name="yelloid" value="<?=$fav['yello_id']?>">
+                                                    <input type="hidden" name="uid" value="<?=$uid?>">
+                                                    <button type="submit" name="unfavorite" class="yelloiconactive fas fa-heart" >
+                                                        <?php foreach ($fcount as $fc) : ?>
+                                                            <h5 class="light-text"><?=$fc?></h5>
+                                                        <?php endforeach; ?>
+                                                    </button>
+                                                </form>
+                                            <?php } ?>
+                                        </div>
+                                        <div class="col-lg-2">
+                                            <form action="yello.php?y=<?=$fav['yello_id']?>" method="post">
+                                                <button type="submit" name="comment" class="yelloicon fas fa-comment-alt">
+                                                    <?php foreach ($ccount as $cc) : ?>
+                                                        <h5 class="light-text"><?=$cc?></h5>
+                                                    <?php endforeach; ?>
+                                                </button>
+                                            </form>
+                                        </div>
+                                        <div class="col-lg-2">
+                                            <!-- If post hasnt been reyello by logged in user -->
+                                            <?php if($checkreyello != $fav['yello_id']) { ?>
+                                                <form action="profile.php?u=<?=$uid?>" method="post">
+                                                    <input type="hidden" name="yelloid" value="<?=$fav['yello_id']?>">
+                                                    <input type="hidden" name="uid" value="<?=$uid?>">
+                                                    <button type="submit" name="retweet" class="yelloicon fas fa-retweet" >
+                                                        <?php foreach ($rcount as $rc) : ?>
+                                                            <h5 class="light-text"><?=$rc?></h5>
+                                                        <?php endforeach; ?>
+                                                    </button>
+                                                </form>
+                                                <!-- If post has been reyello by logged in user -->
+                                            <?php } else { ?>
+                                                <form action="profile.php?u=<?=$uid?>" method="post">
+                                                    <input type="hidden" name="yelloid" value="<?=$fav['yello_id']?>">
+                                                    <input type="hidden" name="uid" value="<?=$uid?>">
+                                                    <button type="submit" name="unretweet" class="yelloiconactive fas fa-retweet" >
+                                                        <?php foreach ($rcount as $rc) : ?>
+                                                            <h5 class="light-text"><?=$rc?></h5>
+                                                        <?php endforeach; ?>
+                                                    </button>
+                                                </form>
+                                            <?php } ?>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    <?php endforeach;?>
+                    <?php endforeach; } ?>
                 </div>
             </div>
             <?php } else { ?>
             <div class="row">
                 <div class="col-lg-6">
-                    <form method="post" action="profile.php?u=<?=$uid?>">
+                    <form method="post" action="profile.php?u=<?=$profile_uid?>">
                         <button name="yello" class="btn btn-block btn-theme-air air-active">Yellos</button>
                     </form>
                 </div>
                 <div class="col-lg-6">
-                    <form method="post" action="profile.php?u=<?=$uid?>">
+                    <form method="post" action="profile.php?u=<?=$profile_uid?>">
                         <button name="favorites" class="btn btn-block btn-theme-air">Favorites</button>
                     </form>
                 </div>
             </div>
             <div class="row" style="padding-top: 15px">
                 <div class="col-lg-12">
-                    <?php foreach ($yellos as $yello) : ?>
-                        <div class="yello-float">
-                            <div class="row">
-                                <div class="col-lg-2">
-                                    <div class="profile-pic"></div>
-                                </div>
-                                <div class="col-lg-10" style="padding-left: 0px">
-                                    <h3 class="tiny-title" style="margin-bottom: 0px"><?=$yello['display']?>  <span class="yello-link" style="color: #f1c40f">@<?=$yello['username']?></span></h3>
-                                    <p class="yello-text"><?=$yello['yello']?></p>
+                    <?php
+                    if($yellos == null){
+                        echo "<div class='yello-float'><i>No yellos</i></div>";
+                    } else {
+                        ?>
+                        <?php foreach ($yellos as $yello) : ?>
+                            <div class="yello-float">
+                                <div class="row">
+                                    <div class="col-lg-2">
+                                        <div class="profile-pic"></div>
+                                    </div>
+                                    <div class="col-lg-10" style="padding-left: 0px">
+                                        <h3 class="tiny-title" style="margin-bottom: 0px"><?=$yello['display']?>  <a href="profile.php?u=<?=$yello['uid']?>" class="yello-link">@<?=$yello['username']?></a></h3>
+                                        <p class="yello-text"><?=$yello['yello']?></p>
+                                        <div class="row" style="padding-top: 15px">
+                                            <!-- Checks to see if the post was already favorited/reyello by logged in user -->
+                                            <?php
+                                            //Sets default value to blank to stop php errors of unassigned varibles
+                                            $yelloid = '';
+                                            $checkyello = '';
+                                            $reyelloid = '';
+                                            $checkreyello = '';
+                                            //Checks logged in users favorites and checks which timeline post are in the table. To prevent double favoriting
+                                            foreach ($favoritedata as $favorite){
+                                                $yelloid = $favorite['yello_id'];
+                                                if ($yelloid == $yello['yello_id']){
+                                                    $checkyello = $yello['yello_id'];
+                                                }
+                                            }
+                                            //Checks logged in users reyellos and checks which timeline post are in the table. To prevent double reyellos
+                                            foreach ($reyello as $ry){
+                                                $reyelloid = $ry['yello_id'];
+                                                if ($reyelloid == $yello['yello_id']){
+                                                    $checkreyello = $yello['yello_id'];
+                                                }
+                                            }
+                                            //Counts the amount of favorites a post has
+                                            $countid = $yello['yello_id'];
+                                            $favoritecount = $pdo->prepare("SELECT COUNT(*) FROM favorite WHERE yello_id = '$countid'");
+                                            $favoritecount->execute();
+                                            $fcount = $favoritecount->fetch(PDO::FETCH_ASSOC);
+
+                                            //Counts the amount of comments a post has
+                                            $commentcount = $pdo->prepare("SELECT COUNT(*) FROM comment WHERE yello_id = '$countid'");
+                                            $commentcount->execute();
+                                            $ccount = $commentcount->fetch(PDO::FETCH_ASSOC);
+
+                                            //Counts the amount of reyellos a post has
+                                            $reyellocount = $pdo->prepare("SELECT COUNT(*) FROM reyello WHERE yello_id = '$countid'");
+                                            $reyellocount->execute();
+                                            $rcount = $reyellocount->fetch(PDO::FETCH_ASSOC);
+                                            ?>
+                                            <div class="col-lg-2">
+                                                <!-- If post hasnt been favorited by logged in user -->
+                                                <?php if($checkyello != $yello['yello_id']) { ?>
+                                                    <form action="profile.php?u=<?=$uid?>" method="post">
+                                                        <input type="hidden" name="yelloid" value="<?=$yello['yello_id']?>">
+                                                        <input type="hidden" name="uid" value="<?=$uid?>">
+                                                        <button type="submit" name="favorite" class="yelloicon fas fa-heart" >
+                                                            <?php foreach ($fcount as $fc) : ?>
+                                                                <h5 class="light-text"><?=$fc?></h5>
+                                                            <?php endforeach; ?>
+                                                        </button>
+                                                    </form>
+                                                    <!-- If post has been favorited by logged in user -->
+                                                <?php } else { ?>
+                                                    <form action="profile.php?u=<?=$uid?>" method="post">
+                                                        <input type="hidden" name="yelloid" value="<?=$yello['yello_id']?>">
+                                                        <input type="hidden" name="uid" value="<?=$uid?>">
+                                                        <button type="submit" name="unfavorite" class="yelloiconactive fas fa-heart" >
+                                                            <?php foreach ($fcount as $fc) : ?>
+                                                                <h5 class="light-text"><?=$fc?></h5>
+                                                            <?php endforeach; ?>
+                                                        </button>
+                                                    </form>
+                                                <?php } ?>
+                                            </div>
+                                            <div class="col-lg-2">
+                                                <form action="yello.php?y=<?=$yello['yello_id']?>" method="post">
+                                                    <button type="submit" name="comment" class="yelloicon fas fa-comment-alt">
+                                                        <?php foreach ($ccount as $cc) : ?>
+                                                            <h5 class="light-text"><?=$cc?></h5>
+                                                        <?php endforeach; ?>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                            <div class="col-lg-2">
+                                                <!-- If post hasnt been reyello by logged in user -->
+                                                <?php if($checkreyello != $yello['yello_id']) { ?>
+                                                    <form action="profile.php?u=<?=$uid?>" method="post">
+                                                        <input type="hidden" name="yelloid" value="<?=$yello['yello_id']?>">
+                                                        <input type="hidden" name="uid" value="<?=$uid?>">
+                                                        <button type="submit" name="retweet" class="yelloicon fas fa-retweet" >
+                                                            <?php foreach ($rcount as $rc) : ?>
+                                                                <h5 class="light-text"><?=$rc?></h5>
+                                                            <?php endforeach; ?>
+                                                        </button>
+                                                    </form>
+                                                    <!-- If post has been reyello by logged in user -->
+                                                <?php } else { ?>
+                                                    <form action="profile.php?u=<?=$uid?>" method="post">
+                                                        <input type="hidden" name="yelloid" value="<?=$yello['yello_id']?>">
+                                                        <input type="hidden" name="uid" value="<?=$uid?>">
+                                                        <button type="submit" name="unretweet" class="yelloiconactive fas fa-retweet" >
+                                                            <?php foreach ($rcount as $rc) : ?>
+                                                                <h5 class="light-text"><?=$rc?></h5>
+                                                            <?php endforeach; ?>
+                                                        </button>
+                                                    </form>
+                                                <?php } ?>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    <?php endforeach;?>
+                        <?php endforeach; }?>
                 </div>
             </div>
             <?php } ?>

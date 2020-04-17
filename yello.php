@@ -198,7 +198,14 @@ if(isset($_POST['unretweet'])) {
             </nav>
         </div>
         <div class="col-lg-6 content">
-            <h1 class="title">Thread</h1>
+            <div class="row">
+                <div class="col-lg-1">
+                    <a href="index.php"><span class="fas fa-chevron-left fa-2x icon" style="padding-top: 15px"></span></a>
+                </div>
+                <div class="col-lg-11">
+                    <h1 class="title" style="margin-bottom: 25px;margin-top: 14px">Thread</h1>
+                </div>
+            </div>
             <div class="row" style="padding-top: 15px">
                 <div class="col-lg-12">
                     <?php
@@ -279,13 +286,11 @@ if(isset($_POST['unretweet'])) {
                                                 <?php } ?>
                                             </div>
                                             <div class="col-lg-2">
-                                                <form action="yello.php?y=<?=$yello['yello_id']?>" method="post">
-                                                    <button type="submit" name="comment" class="yelloicon fas fa-comment-alt">
+                                                    <button name="comment" class="yelloicon fas fa-comment-alt" data-toggle="modal" data-target="#comment">
                                                         <?php foreach ($ccount as $cc) : ?>
                                                             <h5 class="light-text"><?=$cc?></h5>
                                                         <?php endforeach; ?>
                                                     </button>
-                                                </form>
                                             </div>
                                             <div class="col-lg-2">
                                                 <!-- If post hasnt been reyello by logged in user -->

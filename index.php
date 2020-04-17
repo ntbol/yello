@@ -11,6 +11,10 @@ if(!isset($_SESSION['user_id']) || !isset($_SESSION['logged_in'])) {
 //Assigns user id to a varible
 $uid = $_SESSION['user_id'];
 
+//Includes php functions for various functions across the site
+include ('functions/favorite_function.php');
+include ('functions/repost_function.php');
+
 //Pull username from ID
 if (isset($_SESSION['user_id'])) {
     $stmt = $pdo->prepare('SELECT * FROM users WHERE uid = ?');
@@ -34,6 +38,7 @@ if (isset($_SESSION['user_id'])) {
 
 }
 
+//When a user posts a yello
 if(isset($_POST['yello'])) {
     $yello = !empty($_POST['yelloText']) ? trim($_POST['yelloText']) : null;
 
@@ -53,77 +58,6 @@ if(isset($_POST['yello'])) {
     }
 }
 
-//Adds post to logged in users favorites
-if(isset($_POST['favorite'])) {
-    $useruid = !empty($_POST['uid']) ? trim($_POST['uid']) : null;
-    $yelloid = !empty($_POST['yelloid']) ? trim($_POST['yelloid']) : null;
-
-    $sql = "INSERT INTO favorite (favorite_user, yello_id) VALUES (:useruid, :yelloid)";
-    $stmt = $pdo->prepare($sql);
-    $stmt->bindValue(':useruid', $useruid);
-    $stmt->bindValue(':yelloid', $yelloid);
-
-    $result = $stmt->execute();
-
-    //If post was successful
-    if($result) {
-        header ('Location: index.php');
-    }
-}
-
-//Removes post to logged in users favorites
-if(isset($_POST['unfavorite'])) {
-    $useruid = !empty($_POST['uid']) ? trim($_POST['uid']) : null;
-    $yelloid = !empty($_POST['yelloid']) ? trim($_POST['yelloid']) : null;
-
-    $sql = "DELETE FROM favorite WHERE favorite_user = '$useruid' AND yello_id = '$yelloid'";
-    $stmt = $pdo->prepare($sql);
-    $stmt->bindValue(':useruid', $useruid);
-    $stmt->bindValue(':yelloid', $yelloid);
-
-    $result = $stmt->execute();
-
-    //If post was successful
-    if($result) {
-        header ('Location: index.php');
-    }
-}
-
-//repost post on logged in users timeline
-if(isset($_POST['retweet'])) {
-    $useruid = !empty($_POST['uid']) ? trim($_POST['uid']) : null;
-    $yelloid = !empty($_POST['yelloid']) ? trim($_POST['yelloid']) : null;
-
-    $sql = "INSERT INTO reyello (user_uid, yello_id) VALUES (:useruid, :yelloid)";
-    $stmt = $pdo->prepare($sql);
-    $stmt->bindValue(':useruid', $useruid);
-    $stmt->bindValue(':yelloid', $yelloid);
-
-    $result = $stmt->execute();
-
-    //If post was successful
-    if($result) {
-        header ('Location: index.php');
-    }
-}
-
-//unpost repost on logged in users timeline
-if(isset($_POST['unretweet'])) {
-    $useruid = !empty($_POST['uid']) ? trim($_POST['uid']) : null;
-    $yelloid = !empty($_POST['yelloid']) ? trim($_POST['yelloid']) : null;
-
-    $sql = "DELETE FROM reyello WHERE user_uid = '$useruid' AND yello_id = '$yelloid'";
-    $stmt = $pdo->prepare($sql);
-    $stmt->bindValue(':useruid', $useruid);
-    $stmt->bindValue(':yelloid', $yelloid);
-
-    $result = $stmt->execute();
-
-    //If post was successful
-    if($result) {
-        header ('Location: index.php');
-    }
-}
 ?>
 <!DOCTYPE html>
 <html>
