@@ -340,6 +340,7 @@ if (isset($_SESSION['user_id'])) {
             <div class="modal-header" style="padding-top: 25px; padding-bottom: 10px">
                 <h4 class="title" id="editProfileLabel">Edit Profile</h4>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
