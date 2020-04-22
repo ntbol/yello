@@ -59,6 +59,12 @@ if (isset($_SESSION['user_id'])) {
     $reyellos = $pdo->prepare("SELECT * FROM reyello WHERE user_uid = '$uid'");
     $reyellos->execute();
     $reyello = $reyellos->fetchAll(PDO::FETCH_ASSOC);
+
+    //Pulls theme color data
+    $theme = $pdo->prepare("SELECT  u.uid, c.scheme_color FROM customize AS c, users AS u WHERE u.uid = '$profile_uid' AND c.scheme_id = u.user_scheme_id");
+    $theme->execute();
+    $themecolor = $theme->fetch(PDO::FETCH_ASSOC);
+
 }
 
     if(isset($_POST['follow'])){
@@ -99,9 +105,10 @@ if (isset($_SESSION['user_id'])) {
         $bio = !empty($_POST['bio']) ? trim($_POST['bio']) : null;
         $link = !empty($_POST['link']) ? trim($_POST['link']) : null;
         $display = !empty($_POST['display']) ? trim($_POST['display']) : null;
+        $color = !empty($_POST['color']) ? trim($_POST['color']) : null;
 
         //Updates table
-        $edit = "UPDATE users SET link ='$link', bio ='$bio', display ='$display' WHERE uid ='$uid'";
+        $edit = "UPDATE users SET link ='$link', bio ='$bio', display ='$display', user_scheme_id = '$color' WHERE uid ='$uid'";
         $stmt = $pdo->prepare($edit);
 
         $result = $stmt->execute();
@@ -201,17 +208,48 @@ if(isset($_POST['unretweet'])) {
     // Remove www.
     $domain_name = preg_replace('/^www\./', '', $urlParts['host']);
 
-
+    //Assigns the profile users color scheme
+    $bannerColor = $themecolor['scheme_color'];
 ?>
 <!DOCTYPE html>
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="utf-8">
-    <title><?=ucwords($user['username'])?>'s Timeline</title>
+    <title><?=ucwords($user['username'])?>'s Profile</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.1/css/all.css">
     <link rel="stylesheet" href="css/style.css" type="text/css">
+
+    <!-- Sets up theme color to work with buttons on the profile -->
+    <style>
+        .btn-theme-air:hover{
+            border-bottom: <?=$bannerColor?> 5px solid;
+        }
+        .btn-theme{
+            background: <?=$bannerColor?>;
+            border: <?=$bannerColor?> 3px solid;
+        }
+        .btn-theme:hover{
+            color: <?=$bannerColor?>;
+            border: <?=$bannerColor?> 3px solid;
+        }
+        .btn-theme-thin{
+            color: <?=$bannerColor?>;
+            border: <?=$bannerColor?> 3px solid;
+        }
+        .btn-theme-thin:hover{
+            background: <?=$bannerColor?>;
+            color: white;
+            border: <?=$bannerColor?> 3px solid;
+        }
+        .yelloicon:hover{
+            color: <?=$bannerColor?>;
+        }
+        .yelloiconactive{
+            color: <?=$bannerColor?>;
+        }
+    </style>
 
     <script>
         function countChar(val) {
@@ -267,7 +305,7 @@ if(isset($_POST['unretweet'])) {
         <div class="col-lg-6 content">
             <div class="row">
                 <div class="col-lg-1">
-                    <a href="index.php"><span class="fas fa-chevron-left fa-2x icon" style="padding-top: 15px"></span></a>
+                    <a href="index.php"><span class="fas fa-chevron-left fa-2x icon" style="padding-top: 15px; color: <?=$bannerColor?>"></span></a>
                 </div>
                 <div class="col-lg-11">
                     <h1 class="title" style="margin-bottom: 0px"><?=$user['display']?></h1>
@@ -281,13 +319,13 @@ if(isset($_POST['unretweet'])) {
             </div>
             <div class="row">
                 <div class="col-lg-12">
-                    <div class="banner"></div>
+                    <div class="banner" style="background: <?=$bannerColor?>"></div>
                 </div>
             </div>
             <div class="row">
                 <div class="col-lg-1"></div>
                 <div class="col-lg-2">
-                    <div class="user-profile-pic"></div>
+                    <div class="user-profile-pic"  style="background: <?=$bannerColor?>"></div>
                 </div>
                 <div class="col-lg-6"></div>
                 <!-- This button changes based on the user logged in and if you are following the users profile you are looking at -->
@@ -309,12 +347,12 @@ if(isset($_POST['unretweet'])) {
                 <div class="col-lg-1"></div>
                 <div class="col-lg-11">
                     <h3 class="small-title" style="margin-bottom: 0px"><?=$user['display']?></h3>
-                    <h4 class="yello-text" style="color: #f1c40f">@<?=$user['username']?></h4>
+                    <h4 class="yello-text" style="color: <?=$bannerColor?>">@<?=$user['username']?></h4>
                     <p class="yello-text" style="padding-top: 10px"><?=$user['bio']?></p>
                     <div class="row" style="padding-top: 15px">
                         <?php if($user['link'] != null) {?>
                             <div class="col-lg-6 light-text">
-                                <span class="fas fa-link"></span> <a href="<?=$user['link']?>" class="yello-link"><?=$domain_name?></a>
+                                <span class="fas fa-link"></span> <a href="<?=$user['link']?>" class="yello-link" style="color: <?=$bannerColor?>"><?=$domain_name?></a>
                             </div>
                         <?php } else { ?>
                         <?php } ?>
@@ -330,9 +368,9 @@ if(isset($_POST['unretweet'])) {
                     <div class="col-lg-3">
                         <?php foreach ($followerc[0] as $followersCount) : ?>
                             <?php if($followersCount != null) { ?>
-                                <h4 class="small-title-yello"><?=$followersCount?></h4>
+                                <h4 class="small-title-yello" style="color : <?=$bannerColor?>"><?=$followersCount?></h4>
                             <?php } else { ?>
-                                <h4 class="small-title-yello">0</h4>
+                                <h4 class="small-title-yello" style="color: <?=$bannerColor?>">0</h4>
                         <?php } endforeach; ?>
                         <p class="yello-text">Followers</p>
                     </div>
@@ -341,9 +379,9 @@ if(isset($_POST['unretweet'])) {
                     <div class="col-lg-3">
                         <?php foreach ($followingc[0] as $followingCount) : ?>
                             <?php if($followingCount != null) { ?>
-                                <h4 class="small-title-yello"><?=$followingCount?></h4>
+                                <h4 class="small-title-yello" style="color: <?=$bannerColor?>"><?=$followingCount?></h4>
                             <?php } else { ?>
-                                <h4 class="small-title-yello">0</h4>
+                                <h4 class="small-title-yello" style="color: <?=$bannerColor?>">0</h4>
                         <?php } endforeach; ?>
                         <p class="yello-text">Following</p>
                     </div>
@@ -359,7 +397,7 @@ if(isset($_POST['unretweet'])) {
                 </div>
                 <div class="col-lg-6">
                     <form method="post" action="profile.php?u=<?=$profile_uid?>">
-                        <button name="favorites" class="btn btn-block btn-theme-air air-active">Favorites</button>
+                        <button name="favorites" class="btn btn-block btn-theme-air air-active" style="border-bottom-color: <?=$bannerColor?>">Favorites</button>
                     </form>
                 </div>
             </div>
@@ -374,10 +412,10 @@ if(isset($_POST['unretweet'])) {
                         <div class="yello-float">
                             <div class="row">
                                 <div class="col-lg-2">
-                                    <div class="profile-pic"></div>
+                                    <div class="profile-pic" style="background: <?=$bannerColor?>"></div>
                                 </div>
                                 <div class="col-lg-10" style="padding-left: 0px">
-                                    <h3 class="tiny-title" style="margin-bottom: 0px"><?=$fav['display']?>  <span class="yello-link" style="color: #f1c40f">@<?=$fav['username']?></span></h3>
+                                    <h3 class="tiny-title" style="margin-bottom: 0px"><?=$fav['display']?>  <span class="yello-link" style="color: <?=$bannerColor?>">@<?=$fav['username']?></span></h3>
                                     <p class="yello-text"><?=$fav['yello']?></p>
                                     <div class="row" style="padding-top: 15px">
                                         <!-- Checks to see if the post was already favorited/reyello by logged in user -->
@@ -487,7 +525,7 @@ if(isset($_POST['unretweet'])) {
             <div class="row">
                 <div class="col-lg-6">
                     <form method="post" action="profile.php?u=<?=$profile_uid?>">
-                        <button name="yello" class="btn btn-block btn-theme-air air-active">Yellos</button>
+                        <button name="yello" class="btn btn-block btn-theme-air air-active" style="border-bottom-color: <?=$bannerColor?>">Yellos</button>
                     </form>
                 </div>
                 <div class="col-lg-6">
@@ -507,10 +545,10 @@ if(isset($_POST['unretweet'])) {
                             <div class="yello-float">
                                 <div class="row">
                                     <div class="col-lg-2">
-                                        <div class="profile-pic"></div>
+                                        <div class="profile-pic" style="background: <?=$bannerColor?>"></div>
                                     </div>
                                     <div class="col-lg-10" style="padding-left: 0px">
-                                        <h3 class="tiny-title" style="margin-bottom: 0px"><?=$yello['display']?>  <a href="profile.php?u=<?=$yello['uid']?>" class="yello-link">@<?=$yello['username']?></a></h3>
+                                        <h3 class="tiny-title" style="margin-bottom: 0px"><?=$yello['display']?>  <a href="profile.php?u=<?=$yello['uid']?>" class="yello-link" style="color: <?=$bannerColor?>">@<?=$yello['username']?></a></h3>
                                         <p class="yello-text"><?=$yello['yello']?></p>
                                         <div class="row" style="padding-top: 15px">
                                             <!-- Checks to see if the post was already favorited/reyello by logged in user -->
@@ -637,6 +675,30 @@ if(isset($_POST['unretweet'])) {
                 <form method="post" action="profile.php?u=<?=$uid?>">
                     <div class="form-group">
                         <h5 class="tiny-title">Theme Color</h5>
+                        <label>
+                            <input type="radio" name="color" value="1">
+                            <div id="colorSelect" class="yello-theme"></div>
+                        </label>
+                        <label>
+                            <input type="radio" name="color" value="2">
+                            <div  id="colorSelect" class="green-theme"></div>
+                        </label>
+                        <label>
+                            <input type="radio" name="color" value="3">
+                            <div  id="colorSelect" class="blue-theme"></div>
+                        </label>
+                        <label>
+                            <input type="radio" name="color" value="4">
+                            <div  id="colorSelect" class="purple-theme"></div>
+                        </label>
+                        <label>
+                            <input type="radio" name="color" value="5">
+                            <div  id="colorSelect" class="pink-theme"></div>
+                        </label>
+                        <label>
+                            <input type="radio" name="color" value="6">
+                            <div  id="colorSelect" class="orange-theme"></div>
+                        </label>
                     </div>
                     <div class="form-group">
                         <h5 class="tiny-title">Display Name</h5>

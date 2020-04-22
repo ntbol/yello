@@ -255,3 +255,60 @@ a{
     border: none;
     color: #f1c40f;
 }
+
+/* HIDE RADIO */
+[type=radio] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+/* IMAGE STYLES */
+[type=radio] + #colorSelect{
+    cursor: pointer;
+}
+
+/* CHECKED STYLES */
+[type=radio]:checked + #colorSelect{
+    box-shadow: 0 0 0 3px #BBBBBB;
+}
+#colorSelect {
+    margin-right: 15px;
+}
+.yello-theme{
+    background: #f1c40f;
+    border-radius: 50%;
+    width: 58px;
+    height: 58px;
+}
+.green-theme{
+    background: #2ecc71;
+    border-radius: 50%;
+    width: 58px;
+    height: 58px;
+}
+.blue-theme{
+    background: #3498db;
+    border-radius: 50%;
+    width: 58px;
+    height: 58px;
+}
+.purple-theme{
+    background: #9b59b6;
+    border-radius: 50%;
+    width: 58px;
+    height: 58px;
+}
+.pink-theme{
+    background: #f8a5c2;
+    border-radius: 50%;
+    width: 58px;
+    height: 58px;
+}
+.orange-theme{
+    background: #e67e22;
+    border-radius: 50%;
+    width: 58px;
+    height: 58px;
+}

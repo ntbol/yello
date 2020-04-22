@@ -29,13 +29,12 @@ if (isset($_SESSION['user_id'])) {
     $comments->execute();
     $comment = $comments->fetchAll(PDO::FETCH_ASSOC);
 
-
     //Pulls favorite data
     $favoriteyellos = $pdo->prepare("SELECT * FROM favorite WHERE favorite_user = '$uid'");
     $favoriteyellos->execute();
     $favorites = $favoriteyellos->fetchAll(PDO::FETCH_ASSOC);
 
-    //Pulls reyello
+    //Pulls reyello data
     $reyellos = $pdo->prepare("SELECT * FROM reyello WHERE user_uid = '$uid'");
     $reyellos->execute();
     $reyello = $reyellos->fetchAll(PDO::FETCH_ASSOC);
